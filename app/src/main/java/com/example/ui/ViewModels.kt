@@ -270,7 +270,7 @@ class MarketViewModel(
             val updatedUser = user.copy(name = name, email = email, phoneNumber = phone)
             userDao.updateUser(updatedUser)
             _currentUser.value = updatedUser
-            
+
             _userGender.value = gender
             _userAge.value = age
             _userAddress.value = address
@@ -365,7 +365,7 @@ class MarketViewModel(
         val roundedReward = Math.round(reward * 100.0) / 100.0
         _cryptoWalletUsdt.value += roundedReward
         _walletTransactions.value = _walletTransactions.value + "Daily Check-in Reward: +$$roundedReward USDT"
-        
+
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
         _lastCheckInDate.value = today
         return roundedReward
@@ -514,7 +514,7 @@ class MarketViewModel(
                 val prompt = "Identify this product: '$imageName'. Match it with organic mountain honey, supreme Turkish coffee, farm-direct milk, organic premium eggs, cognitive energy, or cocoa almond granola."
                 val matchResultText = ModelService.analyzeProductImage(bitmap, prompt)
                 kotlinx.coroutines.delay(1500) // Beautiful scanning feel
-                
+
                 // Parse the matched item based on result text
                 val matchedName = when {
                     matchResultText.contains("Honey") || matchResultText.contains("عسل") -> "Organic Mountain Honey (عسل جبلي طبيعي)"
@@ -525,7 +525,7 @@ class MarketViewModel(
                     matchResultText.contains("Granola") || matchResultText.contains("شوفان") -> "Rich Cocoa Almond Granola Bar (ألواح الشوفان بالكاكاو)"
                     else -> "Organic Mountain Honey (عسل جبلي طبيعي)"
                 }
-                
+
                 _cameraSearchState.value = CameraSearchResult(
                     identifiedProduct = matchedName,
                     confidence = 0.96,
@@ -934,7 +934,7 @@ class MarketViewModel(
                     - Perfumes & Fragrances
                     - Electronics & Mobiles
                     - Furniture & Decor
-                    
+
                     Please recommend the top 3 categories that best match the user's interests from the available categories list above.
                     Return ONLY a comma-separated list of the recommended category names exactly as spelled above. Do not include any other text, markdown, or bullet points.
                 """.trimIndent()
@@ -1366,13 +1366,13 @@ class MarketViewModel(
     fun checkAndAddBadges(user: UserEntity) {
         viewModelScope.launch {
             var newBadges = user.badges.split(",").filter { it.isNotEmpty() }.toMutableSet()
-            
+
             // Frequent Shopper
             val orderCount = orderDao.getOrdersForCustomer(user.id).first().size
             if (orderCount >= 5 && "Frequent Shopper" !in newBadges) {
                 newBadges.add("Frequent Shopper")
             }
-            
+
             if (newBadges.joinToString(",") != user.badges) {
                 val updatedUser = user.copy(badges = newBadges.joinToString(","))
                 userDao.updateUser(updatedUser)
@@ -1423,7 +1423,7 @@ class MarketViewModel(
         viewModelScope.launch {
             val items = cartItems.value
             if (items.isEmpty()) return@launch
-            
+
             var totalSpent = 0.0
             for (item in items) {
                 totalSpent += item.price * item.quantity
@@ -1463,14 +1463,14 @@ class MarketViewModel(
                     storedOrganicItemDao.insertStoredItem(storedItem)
                 }
             }
-            
+
             val pointsToAdd = totalSpent.toInt()
             val updatedUser = user.copy(loyaltyPoints = user.loyaltyPoints + pointsToAdd)
             userDao.updateUser(updatedUser)
             _currentUser.value = updatedUser
-            
+
             cartItemDao.clearCart(user.id)
-            
+
             if (selectedCardNumber != null) {
                 _aiResponse.value = "🛒 Checkout succeeded using linked Card ****${selectedCardNumber.takeLast(4)}! Orders placed in live tracking ledger."
             } else {
@@ -1538,7 +1538,7 @@ class MarketViewModel(
                         } else {
                             "Your stored '${item.productName}' has reached its expiry date today!"
                         }
-                        
+
                         sendLocalPushNotification(context, title, message)
                         storedOrganicItemDao.markNotified(item.id)
                     }
@@ -1551,7 +1551,7 @@ class MarketViewModel(
         try {
             val channelId = "organic_expiry_alerts"
             val notificationManager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-            
+
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 val channel = android.app.NotificationChannel(
                     channelId,
@@ -1562,14 +1562,14 @@ class MarketViewModel(
                 }
                 notificationManager.createNotificationChannel(channel)
             }
-            
+
             val builder = androidx.core.app.NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
-                
+
             notificationManager.notify((System.currentTimeMillis() % 100000).toInt(), builder.build())
         } catch (e: Exception) {
             Log.e("MarketViewModel", "Failed to send local push notification", e)
@@ -1620,7 +1620,7 @@ class MarketViewModel(
         val newEntry = SearchHistoryEntry(type = type, query = query, details = details)
         val filtered = _searchHistory.value.filterNot { it.query.equals(query, ignoreCase = true) && it.type == type }
         _searchHistory.value = (listOf(newEntry) + filtered).take(15) // Limit to last 15 searches
-        
+
         viewModelScope.launch(exceptionHandler) {
             searchQueryDao.insertSearchQuery(com.example.data.SearchQueryEntity(query = query))
         }
@@ -1753,7 +1753,7 @@ class MarketViewModel(
                         }
                         val cartContext = if (organicItems.isNotEmpty()) {
                             "The user currently has these organic products in their shopping cart: " +
-                            organicItems.joinToString { "${it.productName} (Qty: ${it.quantity})" } + 
+                            organicItems.joinToString { "${it.productName} (Qty: ${it.quantity})" } +
                             ". Proactively provide real-time nutritional advice and healthy meal pairing suggestions or recipes using these organic items. Focus on organic eating benefits, health, and wellness."
                         } else {
                             "The user's cart has no organic items currently. Politely suggest they add some of our premium organic products like Organic Mountain Honey, Fresh Organic Milk, or Organic Premium Eggs to receive real-time nutritional analysis and meal pairings!"
@@ -1764,7 +1764,7 @@ class MarketViewModel(
                     "Delivery" -> "You are an AI Logistic Dispatcher and Route Optimization Copilot. Your goal is to help delivery drivers locate optimized route paths, avoid congested zones, calculate fuel consumption, and handle customer delivery disputes safely. Always use a clear, logistics-oriented tone."
                     else -> "You are the AI Platform Operations Chief. Your goal is to help system administrators analyze the behavioral performance of merchants and drivers, check system transaction metrics, inspect active Firestore records, and settle dispute resolution claims between merchants and customers. Always use a highly precise, administrative, analytical tone."
                 }
-                
+
                 val contextBuilder = StringBuilder()
                 contextBuilder.append("System Instruction: ").append(systemPrompt).append("\n\n")
                 val lastMessages = currentHistory.takeLast(6)
@@ -1816,7 +1816,7 @@ class MarketViewModel(
             kotlinx.coroutines.delay(1200)
             _voiceTranscriptionResult.value = audioText
             _voiceCallStatus.value = "Gemini Processing Order..."
-            
+
             val systemInstruction = "You are a voice assistant that parses customer orders. Extract the grocery items they want to buy."
             try {
                 val response = ModelService.generateAiWithModel(
@@ -1824,10 +1824,10 @@ class MarketViewModel(
                     model = "gemini-3.5-flash",
                     systemInstruction = systemInstruction
                 )
-                
+
                 _voiceCallStatus.value = "Adding matched items to Cart..."
                 kotlinx.coroutines.delay(800)
-                
+
                 val textLower = audioText.lowercase()
                 var addedCount = 0
                 val allProd = products.value
@@ -1838,11 +1838,11 @@ class MarketViewModel(
                         if (addedCount >= 2) break
                     }
                 }
-                
+
                 if (addedCount == 0 && allProd.isNotEmpty()) {
                     addProductToCart(allProd.first(), 1, "Retail")
                 }
-                
+
                 _voiceCallStatus.value = "Order Processed Successfully!"
             } catch (e: Exception) {
                 _voiceCallStatus.value = "Connected"
@@ -1920,11 +1920,11 @@ class MarketViewModel(
         viewModelScope.launch {
             val wishlistItems = _savedProducts.value
             val userId = _currentUser.value?.id ?: 0
-            
+
             val ordersList = orders.firstOrNull() ?: emptyList()
             val myPastOrders = ordersList.filter { it.customerId == userId }
             val allProducts = products.firstOrNull() ?: emptyList()
-            
+
             if (wishlistItems.isEmpty() && myPastOrders.isEmpty()) {
                 if (allProducts.isNotEmpty()) {
                     val randomProducts = allProducts.shuffled().take(2)
@@ -1946,7 +1946,7 @@ class MarketViewModel(
                 }
                 return@launch
             }
-            
+
             wishlistItems.forEach { prod ->
                 val oldP = prod.retailPrice
                 val discount = (15..35).random() / 100.0
@@ -1962,11 +1962,11 @@ class MarketViewModel(
                 _saleNotifications.value = listOf(notif) + _saleNotifications.value
                 sendSystemNotification(context, "${prod.name} (Wishlist)", oldP, newP)
             }
-            
+
             myPastOrders.forEach { order ->
                 val matchingProduct = allProducts.find { it.id == order.productId } ?: return@forEach
                 if (wishlistItems.any { it.id == matchingProduct.id }) return@forEach
-                
+
                 val oldP = matchingProduct.retailPrice
                 val discount = (15..35).random() / 100.0
                 val newP = (oldP * (1.0 - discount) * 100).toInt() / 100.0
@@ -1989,7 +1989,7 @@ class MarketViewModel(
             val channelId = "sale_alerts_channel"
             val notificationId = (1000..9999).random()
             val notificationManager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-            
+
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 val channel = android.app.NotificationChannel(
                     channelId,
@@ -2000,18 +2000,18 @@ class MarketViewModel(
                 }
                 notificationManager.createNotificationChannel(channel)
             }
-            
+
             val text = "Price drop! $productName is now $${newPrice} (was $${oldPrice})!"
             val textAr = "انخفاض في السعر! المنتج $productName أصبح بسعر $${newPrice} بدلاً من $${oldPrice}!"
             val displayMsg = if (_appLanguage.value == "ar") textAr else text
-            
+
             val builder = androidx.core.app.NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentTitle(if (_appLanguage.value == "ar") "⚡ تنبيه تخفيضات ذكي" else "⚡ AI Store Sale Alert")
                 .setContentText(displayMsg)
                 .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
-                
+
             notificationManager.notify(notificationId, builder.build())
         } catch (e: Exception) {
             Log.e("MarketViewModel", "Failed to send native notification", e)
@@ -2033,7 +2033,7 @@ class MarketViewModel(
                 val ordersList = orders.firstOrNull() ?: emptyList()
                 val myPastOrders = ordersList.filter { it.customerId == user.id }
                 val pastProductsStr = myPastOrders.joinToString(", ") { "${it.productName} (Qty: ${it.quantity})" }
-                
+
                 val prompt = """
                     You are an AI-driven e-commerce product recommendation engine for an Organic Grocery Store.
                     The user has a purchase history containing these items: $pastProductsStr.
@@ -2043,7 +2043,7 @@ class MarketViewModel(
                     - Fresh Organic Milk - Farm Direct
                     - Organic Premium Farm Eggs Carton
                     - Rich Cocoa Almond Granola Bar
-                    
+
                     Return the recommendations ONLY as a raw JSON array of objects. Do not wrap in markdown ```json or other formatting.
                     The objects must have exactly these keys:
                     - "id": a random integer from 100 to 999
@@ -2051,14 +2051,14 @@ class MarketViewModel(
                     - "category": the product's category
                     - "price": price value (e.g., 12.5)
                     - "reason": a short, personalized 1-sentence explanation of why we recommend it based on their specific past purchase history.
-                    
+
                     Example output format:
                     [{"id": 105, "name": "Organic Mountain Honey", "category": "Organic Foods", "price": 14.99, "reason": "Since you purchased eggs and breakfast products, we suggest our mountain honey for a perfect organic breakfast!"}]
                 """.trimIndent()
-                
+
                 val response = com.example.data.ModelService.generateAiContent(prompt).trim()
                 Log.d("MarketViewModel", "AI recommendations raw response: $response")
-                
+
                 val parsedList = mutableListOf<AIProductRecommendation>()
                 try {
                     val cleanResponse = response.replace("```json", "").replace("```", "").trim()
@@ -2167,21 +2167,21 @@ class MarketViewModel(
                     2. Whole Foods Market
                     3. iHerb Organic
                     4. Local Smart-Store
-                    
+
                     Return ONLY a JSON array of objects. Do not include markdown or other texts.
                     Each object must have exactly these keys:
                     - "retailerName": name of the retailer
                     - "price": compared price in USD (should range close to standard market value)
                     - "shippingDays": shipping speed in days (e.g. 1, 2, 3)
                     - "isBestDeal": boolean (set true ONLY for the lowest price)
-                    
+
                     Example:
                     [{"retailerName": "Amazon Organic Shop", "price": 12.99, "shippingDays": 2, "isBestDeal": false}]
                 """.trimIndent()
-                
+
                 val response = com.example.data.ModelService.generateAiContent(prompt).trim()
                 Log.d("MarketViewModel", "Price comparison raw response: $response")
-                
+
                 val compList = mutableListOf<PriceComparison>()
                 try {
                     val cleanResponse = response.replace("```json", "").replace("```", "").trim()
@@ -2248,9 +2248,9 @@ class MarketViewModel(
                         "Organic Market"
                     }
                 }
-                
+
                 kotlinx.coroutines.delay(2000) // Aesthetic visual progress
-                
+
                 val parsedResult = when {
                     response.contains("Honey") || response.contains("عسل") || response.contains("Organic Market") || response.contains("عسل جبلي") -> {
                         ReceiptScanResult(
@@ -2292,9 +2292,9 @@ class MarketViewModel(
                         )
                     }
                 }
-                
+
                 _scannedReceiptResult.value = parsedResult
-                
+
                 // Automatically add to purchase history (as OrderEntity with "Delivered" status)
                 val user = _currentUser.value
                 if (user != null) {
@@ -2302,7 +2302,7 @@ class MarketViewModel(
                         val allProd = productDao.getAllProducts().first()
                         val matchingProduct = allProd.find { it.name.lowercase().contains(item.productName.lowercase()) || item.productName.lowercase().contains(it.name.lowercase()) }
                         val productId = matchingProduct?.id ?: (allProd.firstOrNull()?.id ?: 1)
-                        
+
                         val order = OrderEntity(
                             customerId = user.id,
                             customerName = user.name,
@@ -2340,27 +2340,27 @@ class MarketViewModel(
             val oneMonthMs = 30L * 24L * 60L * 60L * 1000L
             val currentMonthStart = now - oneMonthMs
             val previousMonthStart = now - (2 * oneMonthMs)
-            
+
             val currentMonthOrders = userOrders.filter { it.createdAt >= currentMonthStart }
             val previousMonthOrders = userOrders.filter { it.createdAt in previousMonthStart until currentMonthStart }
-            
+
             fun isOrganic(name: String): Boolean {
                 val lower = name.lowercase()
                 return lower.contains("organic") || lower.contains("عضوي") || lower.contains("طبيعي") || lower.contains("fresh") || lower.contains("عسل") || lower.contains("حليب") || lower.contains("بيض")
             }
-            
+
             val currentOrganicOrders = currentMonthOrders.filter { isOrganic(it.productName) }
             val previousOrganicOrders = previousMonthOrders.filter { isOrganic(it.productName) }
-            
+
             var currentSpend = currentOrganicOrders.sumOf { it.totalPrice }
             var previousSpend = previousOrganicOrders.sumOf { it.totalPrice }
-            
+
             // Add fallback historical mock data so it looks populated on first launch
             if (currentSpend == 0.0 && previousSpend == 0.0) {
                 currentSpend = 48.50
                 previousSpend = 35.00
             }
-            
+
             val difference = if (previousSpend > 0) {
                 ((currentSpend - previousSpend) / previousSpend) * 100.0
             } else if (currentSpend > 0) {
@@ -2368,7 +2368,7 @@ class MarketViewModel(
             } else {
                 0.0
             }
-            
+
             val breakdown = if (currentOrganicOrders.isEmpty()) {
                 listOf(
                     OrganicSpendBreakdown("Organic Mountain Honey (عسل جبلي طبيعي)", 29.00),
@@ -2380,7 +2380,7 @@ class MarketViewModel(
                     .map { (name, list) -> OrganicSpendBreakdown(name, list.sumOf { it.totalPrice }) }
                     .sortedByDescending { it.amount }
             }
-            
+
             SpendingComparison(
                 currentMonthOrganicSpend = (currentSpend * 100).toInt() / 100.0,
                 previousMonthOrganicSpend = (previousSpend * 100).toInt() / 100.0,
@@ -2442,17 +2442,17 @@ class MarketViewModel(
                       "quantity": integer
                     }
                 """.trimIndent()
-                
+
                 val response = ModelService.generateAiWithModel(
                     prompt = command,
                     model = "gemini-3.5-flash",
                     systemInstruction = systemInstruction
                 )
-                
+
                 var action = "SEARCH"
                 var query = command
                 var quantity = 1
-                
+
                 try {
                     val cleanResponse = response.replace("```json", "").replace("```", "").trim()
                     val json = org.json.JSONObject(cleanResponse)
@@ -2474,7 +2474,7 @@ class MarketViewModel(
                         else -> command
                     }
                 }
-                
+
                 if (action == "ADD_TO_CART") {
                     val allProd = productDao.getAllProducts().first()
                     val matchingProduct = allProd.find { it.name.lowercase().contains(query.lowercase()) || query.lowercase().contains(it.name.lowercase()) }
@@ -2645,4 +2645,3 @@ data class OrganicSpendBreakdown(
     val productName: String,
     val amount: Double
 )
-
