@@ -15,12 +15,11 @@ export async function probeGateway({origin, companyId, getIdToken, fetchImpl = f
   if (typeof token !== 'string' || !token) throw new Error('AUTH_REQUIRED');
   const results = {};
   for (const [key, pathname, source] of [
-    ['sql', '/v1/sql/records', 'SQL_READ_ONLY'],
+    ['sql', '/v1/sql/status', 'SQL_READ_ONLY'],
     ['trustsoft', '/v1/trustsoft/status', 'TRUSTSOFT_API'],
   ]) {
     const url = new URL(pathname, base);
     url.searchParams.set('companyId', companyId);
-    if (key === 'sql') url.searchParams.set('limit', '1');
     try {
       const response = await fetchImpl(url.toString(), {
         method: 'GET', redirect: 'error', cache: 'no-store',
@@ -34,7 +33,7 @@ export async function probeGateway({origin, companyId, getIdToken, fetchImpl = f
       const data = await response.json();
       if (data?.status === 'LIVE' && data.source === source) {
         // Gateway response is NOT independent verification of source integrity or production readiness.
-        results[key] = { status: 'RESPONSE_OK_UNVERIFIED', count: key === 'sql' && Number.isSafeInteger(data.count) ? data.count : undefined,
+        results[key] = { status: 'RESPONSE_OK_UNVERIFIED', recordAvailable: key === 'sql' && typeof data.recordAvailable === 'boolean' ? data.recordAvailable : undefined,
           online: key === 'trustsoft' && typeof data.online === 'boolean' ? data.online : undefined };
       } else {
         results[key] = { status: 'BLOCKED', reason: typeof data?.reason === 'string' ? data.reason.slice(0, 100) : 'NOT_VERIFIED' };
