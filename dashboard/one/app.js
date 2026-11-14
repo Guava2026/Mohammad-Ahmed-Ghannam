@@ -97,6 +97,7 @@ const state = {
   cloud: "loading", // loading | ready | unconfigured | failed
   user: null, profile: null, companies: [], companyId: null, invites: [], messages: [], tasks: [], branches: [], audit: [],
   demo: store.get("jawafa-one-demo", "1") === "1",
+  gatewayProbe: { status: "NOT_TESTED", companyId: null, details: null },
   localRouter: C.createRouter(),
 };
 const company = () => state.companies.find(c => c.id === state.companyId) || null;
@@ -142,6 +143,7 @@ function stopAll() { for (const k of Object.keys(unsubs)) { if (unsubs[k]) unsub
 
 function onUser(user) {
   stopAll();
+  state.gatewayProbe = { status: "NOT_TESTED", companyId: null, details: null };
   state.user = user && !user.isAnonymous ? { uid: user.uid, email: C.normalizeEmail(user.email), name: user.displayName || "", photo: user.photoURL || "" } : null;
   state.companies = []; state.invites = []; state.messages = []; state.tasks = []; state.branches = []; state.audit = []; state.companyId = null; state.profile = null;
   if (!state.user) { render(); return; }
@@ -163,6 +165,7 @@ function onUser(user) {
 function selectCompany(id) {
   for (const k of ["messages", "tasks", "branches", "audit"]) { if (unsubs[k]) unsubs[k](); unsubs[k] = null; }
   state.companyId = id; state.messages = []; state.tasks = []; state.branches = []; state.audit = [];
+  state.gatewayProbe = { status: "NOT_TESTED", companyId: id, details: null };
   if (id && state.user) {
     store.set("jawafa-one-company:" + state.user.uid, id);
     if (!state.profile || state.profile.lastCompanyId !== id) {
@@ -587,9 +590,49 @@ function integrations() {
     { name: T("مدفوعات Premium Plus", "Premium Plus billing"), status: "NOT_STARTED", note: T("لا يوجد مزود دفع. الخطة لا يغيّرها إلا خادم الفوترة.", "No payment provider. Only a billing backend may change the plan.") },
   ];
 }
+async function runGatewayCheck() {
+  const id = state.companyId;
+  if (!id || !auth?.currentUser) { toast(T("اختر شركة وسجّل الدخول أولًا.", "Sign in and select a company first.")); return; }
+  if (!window.JAWAFA_ONE_GATEWAY_URL) { toast(T("عنوان بوابة HTTPS غير مُهيّأ.", "HTTPS gateway URL is not configured.")); return; }
+  state.gatewayProbe = { status: "TESTING", companyId: id, details: null };
+  render();
+  try {
+    const { probeGateway } = await import("./bridge-client.mjs");
+    const details = await probeGateway({
+      origin: window.JAWAFA_ONE_GATEWAY_URL, companyId: id,
+      getIdToken: () => auth.currentUser?.getIdToken(),
+    });
+    if (state.companyId !== id || !auth?.currentUser) return;
+    state.gatewayProbe = { status: "RESPONDED", companyId: id, details };
+  } catch {
+    if (state.companyId !== id) return;
+    state.gatewayProbe = { status: "FAILED", companyId: id, details: null };
+  }
+  render();
+}
+
+function gatewayStatus(item) {
+  const status = item?.status || "NOT_TESTED";
+  const kind = status === "BLOCKED" || status === "UNREACHABLE" ? "blocked" : "built";
+  return el("div", { class: "item row" }, el("b", null, item?.label || ""),
+    badge(kind, status), item?.recordAvailable === undefined ? "" : el("span", { class: "small" }, item.recordAvailable ? T("تم العثور على سجل في المصدر (غير مطابق)", "Source record exists (not reconciled)") : T("لا توجد سجلات ضمن العرض المعتمد", "No records in the approved view")));
+}
 function renderConnections(v) {
+  const g = state.gatewayProbe;
+  const configured = Boolean(window.JAWAFA_ONE_GATEWAY_URL);
+  const isChecking = g.status === "TESTING";
+  const result = g.status === "RESPONDED" && g.companyId === state.companyId ? g.details : null;
   v.replaceChildren(sectionHead(T("مركز الربط والتكاملات", "Integrations hub")),
     el("div", { class: "banner info" }, T("الحالات من أدلة فعلية في المستودع (انظر INTEGRATION_STATUS.md). لا يوصف أي تكامل بأنه LIVE دون اختبار موثق في البيئة المقصودة.", "Statuses come from evidence in the repository (see INTEGRATION_STATUS.md). Nothing is LIVE without a documented test in the target environment.")),
+    el("div", { class: "panel" },
+      el("h3", null, T("اختبار بوابة SQL وTrustSoft", "Test SQL and TrustSoft gateway"), badge("built", configured ? "CONFIGURED_UNVERIFIED" : "NOT_CONFIGURED")),
+      el("p", { class: "small muted" }, T("فحص مصادقة وقراءة محدودة عند الطلب فقط؛ لا يستخدم كلمات مرور SQL داخل المتصفح ولا يثبت اعتماد البيانات الإنتاجية.", "On-demand authenticated limited-read probe only; no browser SQL passwords and no production data certification.")),
+      el("button", { class: "primary", type: "button", disabled: !configured || !state.companyId || !auth?.currentUser || isChecking, onclick: runGatewayCheck },
+        isChecking ? T("جارٍ الفحص...", "Checking...") : T("تحقق من اتصال البوابة", "Check gateway connection")),
+      g.status === "FAILED" ? el("p", { class: "small" }, T("فشل الفحص. لم تُعتمد حالة LIVE.", "Probe failed. LIVE status was not established.")) : null,
+      result ? el("div", { class: "list" }, gatewayStatus({ ...result.sql, label: "SQL Server" }),
+        gatewayStatus({ ...result.trustsoft, label: "TrustSoft" }),
+        el("p", { class: "small muted" }, T("استجابة API لا تثبت مطابقة المصدر أو الجاهزية الإنتاجية.", "An API response does not prove source reconciliation or production readiness."))) : null),
     el("div", { class: "list" }, ...integrations().map(i => el("div", { class: "item" }, el("div", { class: "row" }, el("b", null, i.name), STATUS_BADGE[i.status]()), el("div", { class: "small muted" }, i.note)))));
 }
 
