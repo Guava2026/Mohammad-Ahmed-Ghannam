@@ -32,6 +32,12 @@ async function readSql(limit) {
   return {status:'LIVE',source:'SQL_READ_ONLY',count:result.recordset.length,rows:result.recordset};
  } finally {await pool.close();}
 }
+// Return only a connectivity marker to the browser, never financial SQL rows.
+async function readSqlStatus() {
+ const result=await readSql(1);
+ if (result.status!=='LIVE') return result;
+ return {status:'LIVE',source:'SQL_READ_ONLY',recordAvailable:result.count>0,checkedAt:new Date().toISOString()};
+}
 async function readTrustsoft() {
  if (!trustConfigured) return {status:'BLOCKED',reason:'TRUSTSOFT_NOT_CONFIGURED'};
  const endpoint=trustsoftEndpoint(process.env.TRUSTSOFT_STATUS_URL);
@@ -56,6 +62,7 @@ const server=http.createServer(async(req,res)=>{
   if (!company.exists||!allowed(company.data(),identity.uid)) return reply(res,403,{error:'COMPANY_ACCESS_DENIED'});
   const url=new URL(req.url,'http://localhost');
   if (url.searchParams.get('companyId')!==companyId) return reply(res,403,{error:'COMPANY_MISMATCH'});
+  if (url.pathname==='/v1/sql/status') return reply(res,200,await readSqlStatus());
   if (url.pathname==='/v1/sql/records') return reply(res,200,await readSql(parseLimit(url.searchParams.get('limit'))));
   if (url.pathname==='/v1/trustsoft/status') return reply(res,200,await readTrustsoft());
   return reply(res,404,{error:'NOT_FOUND'});
