@@ -3,6 +3,11 @@ on:
   push:
     paths:
       - 'integrations/jawafa-readonly/**'
+      - 'dashboard/one/bridge-client.mjs'
+      - 'dashboard/one/app.js'
+      - 'dashboard/one/index.html'
+      - 'dashboard/one/gateway-config.js'
+      - 'dashboard/tests/one-bridge.test.mjs'
       - '.github/workflows/jawafa-readonly-gateway.yml'
   pull_request:
     paths:
@@ -25,3 +30,7 @@ jobs:
         run: node --check integrations/jawafa-readonly/server.mjs
       - name: Run gateway security policy tests
         run: node --test integrations/jawafa-readonly/test/*.test.mjs
+      - name: Check frontend integration syntax
+        run: node --check dashboard/one/app.js && node --check dashboard/one/bridge-client.mjs
+      - name: Check browser gateway verification policy
+        run: node --test dashboard/tests/one-bridge.test.mjs
