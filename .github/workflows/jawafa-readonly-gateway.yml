@@ -12,6 +12,11 @@ on:
   pull_request:
     paths:
       - 'integrations/jawafa-readonly/**'
+      - 'dashboard/one/bridge-client.mjs'
+      - 'dashboard/one/app.js'
+      - 'dashboard/one/index.html'
+      - 'dashboard/one/gateway-config.js'
+      - 'dashboard/tests/one-bridge.test.mjs'
       - '.github/workflows/jawafa-readonly-gateway.yml'
   workflow_dispatch:
 permissions:
