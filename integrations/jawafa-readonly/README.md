@@ -8,6 +8,8 @@ Required server-only configuration: `JAWAFA_COMPANY_ID`, `JAWAFA_ALLOWED_ORIGIN`
 
 SQL login must have only SELECT permissions on the pre-reviewed reporting view. No sa or elevated database role. Secrets stay out of GitHub and browser apps.
 
-API: `GET /health`; `GET /v1/sql/records?companyId=<id>&limit=10`; `GET /v1/trustsoft/status?companyId=<id>`. Data routes require Firebase ID token (Bearer) and company membership/role authorisation. TrustSoft response returns only validated summary status fields; not video or credentials.
+API: `GET /health`; `GET /v1/sql/status?companyId=<id>` (presence-only, no record contents); `GET /v1/sql/records?companyId=<id>&limit=10` (authorised reporting); `GET /v1/trustsoft/status?companyId=<id>`. Data routes require Firebase ID token (Bearer) and company membership/role authorisation. TrustSoft response returns only validated summary status fields; not video or credentials.
 
 Before marking LIVE: verify one original SQL record, denial of SQL INSERT/UPDATE/DELETE, cross-company isolation, TrustSoft vendor API field mapping, TLS and network access, error handling and audit trail. No real database or vendor API connection was performed during development. Jawafa_DB and accounting originals remain unchanged.
+
+The ONE dashboard uses only `/v1/sql/status` for verification, not the raw `/v1/sql/records` route. A successful HTTP response is not equivalent to certified source integrity or an approved LIVE production integration.
