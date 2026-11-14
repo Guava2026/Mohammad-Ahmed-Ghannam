@@ -15,14 +15,16 @@ test('probes both endpoints with authenticated token, one SQL row maximum and no
   const calls=[];
   const res = await probeGateway({origin:'https://bridge.example.com/',companyId:'company123',getIdToken:async()=> 'test.token',fetchImpl:async (url,opts)=>{
     calls.push({url,opts});
-    return {ok:true,status:200,json:async()=>url.includes('/sql/')?{status:'LIVE',source:'SQL_READ_ONLY',count:1,rows:[{Account:99}]}:{status:'LIVE',source:'TRUSTSOFT_API',online:true}};
+    return {ok:true,status:200,json:async()=>url.includes('/sql/')?{status:'LIVE',source:'SQL_READ_ONLY',recordAvailable:true}:{status:'LIVE',source:'TRUSTSOFT_API',online:true}};
   }});
   assert.equal(calls.length,2);
   assert.equal(res.sql.status,'RESPONSE_OK_UNVERIFIED');
   assert.equal(res.trustsoft.status,'RESPONSE_OK_UNVERIFIED');
   assert.equal('rows' in res.sql,false);
+  assert.equal(res.sql.recordAvailable,true);
   assert(calls.every(c=>c.opts.method==='GET' && c.opts.redirect==='error' && c.opts.headers.authorization==='Bearer test.token' && !c.url.includes('test.token')));
-  assert(calls[0].url.includes('limit=1'));
+  assert(calls[0].url.includes('/v1/sql/status'));
+  assert.equal(calls[0].url.includes('limit='),false);
 });
 
 test('non-200 and blocked responses cannot become LIVE', async () => {
