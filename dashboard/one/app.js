@@ -615,7 +615,7 @@ function gatewayStatus(item) {
   const status = item?.status || "NOT_TESTED";
   const kind = status === "BLOCKED" || status === "UNREACHABLE" ? "blocked" : "built";
   return el("div", { class: "item row" }, el("b", null, item?.label || ""),
-    badge(kind, status), item?.count === undefined ? "" : el("span", { class: "small" }, "rows≤1: " + num(item.count)));
+    badge(kind, status), item?.recordAvailable === undefined ? "" : el("span", { class: "small" }, item.recordAvailable ? T("تم العثور على سجل في المصدر (غير مطابق)", "Source record exists (not reconciled)") : T("لا توجد سجلات ضمن العرض المعتمد", "No records in the approved view")));
 }
 function renderConnections(v) {
   const g = state.gatewayProbe;
