@@ -1,6 +1,6 @@
 // Read-only JAWAFA ONE gateway. Run behind a private HTTPS reverse proxy; never on GitHub Pages.
 import http from 'node:http';
-import {allowed,makeSelect,parseLimit,trustsoftEndpoint} from './policy.mjs';
+import {allowed,makeSelect,parseLimit,trustsoftEndpoint,summarizeSqlRead} from './policy.mjs';
 const port=Number(process.env.PORT||8080);
 const companyId=process.env.JAWAFA_COMPANY_ID;
 const allowedOrigin=process.env.JAWAFA_ALLOWED_ORIGIN;
@@ -36,7 +36,7 @@ async function readSql(limit) {
 async function readSqlStatus() {
  const result=await readSql(1);
  if (result.status!=='LIVE') return result;
- return {status:'LIVE',source:'SQL_READ_ONLY',recordAvailable:result.count>0,checkedAt:new Date().toISOString()};
+ return {...summarizeSqlRead(result),checkedAt:new Date().toISOString()};
 }
 async function readTrustsoft() {
  if (!trustConfigured) return {status:'BLOCKED',reason:'TRUSTSOFT_NOT_CONFIGURED'};
