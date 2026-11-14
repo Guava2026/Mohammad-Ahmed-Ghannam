@@ -29,3 +29,9 @@ export function trustsoftEndpoint(value) {
   if (['localhost','127.0.0.1','::1'].includes(u.hostname)||/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(u.hostname)) throw new Error('Private endpoint not allowed');
   return u;
 }
+
+// Health probe must not serialize or return any recordset/financial values.
+export function summarizeSqlRead(result) {
+ if (result?.status !== 'LIVE') return {status:'BLOCKED', reason:result?.reason || 'SQL_NOT_AVAILABLE'};
+ return {status:'LIVE', source:'SQL_READ_ONLY', recordAvailable:Number(result.count)>0};
+}
